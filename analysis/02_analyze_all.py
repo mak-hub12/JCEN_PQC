@@ -65,6 +65,16 @@ ALG_COLOR = {
 
 
 def load_all():
+    # Dataset 2 energy (Dilithium2 run2, Falcon, SPHINCS+) is per-operation: the
+    # split-window merge algorithm correctly attributed PPK2 charge to each individual
+    # operation within a multi-operation GPIO window.
+    #
+    # Dataset 1 energy (Dilithium2 run1, Kyber, P256) uses raw ppk2_energy_uJ which
+    # spans the full GPIO trigger window and may cover multiple operations. We
+    # instead estimate per-operation energy as I_mean × V × t, which is consistent
+    # with the power column and the per-operation usec timing.
+    DATASET2_KEYS = {"dilithium2_dataset2", "falcon512", "sphincs"}
+
     files = {
         "dilithium2_dataset1": "dilithium2_dataset1_370.csv",
         "dilithium2_dataset2": "dilithium2_dataset2_370.csv",
@@ -82,11 +92,19 @@ def load_all():
         df = pd.read_csv(path)
         df["alg_key"] = key
         df["latency_ms"] = df["usec"] / 1000
-        df["energy_mJ"]  = df["ppk2_energy_uJ"] / 1000
         df["power_mW"]   = (df["ppk2_current_mean_uA"] / 1000) * 3.3
         df["op"] = df["op"].replace("verify_ok", "verify")
+
+        if key in DATASET2_KEYS:
+            df["energy_mJ"] = df["ppk2_energy_uJ"] / 1000
+            df["energy_source"] = "ppk2_integrated"
+        else:
+            # Estimated per-operation energy: I_mean (A) × V (V) × t (s) → J → mJ
+            df["energy_mJ"] = (df["ppk2_current_mean_uA"] / 1e6) * 3.3 * (df["usec"] / 1e6) * 1e3
+            df["energy_source"] = "estimated_IVt"
+
         frames[key] = df
-        print(f"  Loaded {key}: {len(df)} rows")
+        print(f"  Loaded {key}: {len(df)} rows  [energy: {df['energy_source'].iloc[0]}]")
     return frames
 
 

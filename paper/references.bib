@@ -1,0 +1,193 @@
+% ============================================================
+% NIST PQC Standards
+% ============================================================
+
+@techreport{nist-fips203,
+  author      = {{National Institute of Standards and Technology}},
+  title       = {{FIPS 203: Module-Lattice-Based Key-Encapsulation
+                  Mechanism Standard}},
+  institution = {NIST},
+  year        = {2024},
+  month       = aug,
+  note        = {\url{https://doi.org/10.6028/NIST.FIPS.203}}
+}
+
+@techreport{nist-fips204,
+  author      = {{National Institute of Standards and Technology}},
+  title       = {{FIPS 204: Module-Lattice-Based Digital Signature Standard}},
+  institution = {NIST},
+  year        = {2024},
+  month       = aug,
+  note        = {\url{https://doi.org/10.6028/NIST.FIPS.204}}
+}
+
+@techreport{nist-fips205,
+  author      = {{National Institute of Standards and Technology}},
+  title       = {{FIPS 205: Stateless Hash-Based Digital Signature Standard}},
+  institution = {NIST},
+  year        = {2024},
+  month       = aug,
+  note        = {\url{https://doi.org/10.6028/NIST.FIPS.205}}
+}
+
+@techreport{nist-fips206,
+  author      = {{National Institute of Standards and Technology}},
+  title       = {{FIPS 206: Module-Lattice-Based Digital Signature Standard
+                  (Falcon)}},
+  institution = {NIST},
+  year        = {2024},
+  month       = aug,
+  note        = {\url{https://doi.org/10.6028/NIST.FIPS.206}}
+}
+
+% ============================================================
+% Algorithm Specifications
+% ============================================================
+
+@misc{dilithium-spec,
+  author       = {Ducas, L{\'e}o and Kiltz, Eike and Lepoint, Tancr\`ede
+                  and Lyubashevsky, Vadim and Schwabe, Peter and
+                  Seiler, Gregor and Stehl\'e, Damien},
+  title        = {{CRYSTALS-Dilithium}: Algorithm Specifications and
+                  Supporting Documentation (Version 3.1)},
+  year         = {2021},
+  howpublished = {Submission to NIST PQC Standardization},
+  note         = {\url{https://pq-crystals.org/dilithium/}}
+}
+
+@misc{falcon-spec,
+  author       = {Fouque, Pierre-Alain and Hoffstein, Jeffrey and
+                  Kirchner, Paul and Lyubashevsky, Vadim and
+                  Pornin, Thomas and Prest, Thomas and Ricosset, Thomas
+                  and Seiler, Gregor and Whyte, William and Zhang, Zhenfei},
+  title        = {Falcon: Fast-Fourier Lattice-based Compact Signatures
+                  over {NTRU} (Version 1.2)},
+  year         = {2020},
+  howpublished = {Submission to NIST PQC Standardization},
+  note         = {\url{https://falcon-sign.info/}}
+}
+
+@misc{sphincsplus-spec,
+  author       = {Aumasson, Jean-Philippe and Bernstein, Daniel J. and
+                  Beullens, Ward and Dobraunig, Christoph and
+                  Eichlseder, Maria and Fluhrer, Scott and
+                  Gazdag, Stefan-Lukas and H{\"u}lsing, Andreas and
+                  Kampanakis, Panos and K{\"o}lbl, Stefan and
+                  Lange, Tanja and Lauridsen, Martin M. and
+                  Mendel, Florian and Niederhagen, Ruben and
+                  Rechberger, Christian and Rijneveld, Joost and
+                  Schwabe, Peter},
+  title        = {{SPHINCS}$^+$: Submission to the {NIST} Post-Quantum
+                  Cryptography Project (Round 3)},
+  year         = {2020},
+  howpublished = {Submission to NIST PQC Standardization},
+  note         = {\url{https://sphincs.org/}}
+}
+
+% ============================================================
+% Implementations
+% ============================================================
+
+@misc{pqclean,
+  author       = {{PQClean Contributors}},
+  title        = {{PQClean}: Clean, portable, tested implementations of
+                  post-quantum cryptography},
+  year         = {2024},
+  howpublished = {GitHub},
+  note         = {\url{https://github.com/PQClean/PQClean}}
+}
+
+@misc{jcen-repo,
+  author       = {McGuire, Austin},
+  title        = {{JCEN\_PQC}: {STM32F446RE} {PQC} Benchmark Repository},
+  year         = {2025},
+  howpublished = {GitHub},
+  note         = {\url{https://github.com/mak-hub12/JCEN_PQC}}
+}
+
+% ============================================================
+% Related Work: Embedded PQC Benchmarks
+% ============================================================
+
+@article{pqm4,
+  author    = {Kannwischer, Matthias J. and Rijneveld, Joost and
+               Schwabe, Peter and Stoffelen, Ko},
+  title     = {{PQM4}: Post-Quantum Crypto Library for the
+               {ARM Cortex-M4}},
+  journal   = {IACR Transactions on Cryptographic Hardware and
+               Embedded Systems},
+  year      = {2019},
+  volume    = {2019},
+  number    = {2},
+  pages     = {105--123},
+  doi       = {10.13154/tches.v2019.i2.105-123}
+}
+
+@inproceedings{banegas2022,
+  author    = {Banegas, Gustavo and Kannwischer, Matthias J. and
+               Schwabe, Peter and Smith-Tone, Daniel},
+  title     = {{BIKE}: Bit-Flipping Key Encapsulation on Embedded Devices},
+  booktitle = {Proceedings of ASHES 2022 (Workshop on Attacks and Solutions
+               in Hardware Security)},
+  year      = {2022},
+  note      = {\TODO{Verify full citation}}
+}
+
+@article{nejatollahi2019,
+  author    = {Nejatollahi, Hamid and Dutt, Nikil and Ray, Sandip and
+               Regazzoni, Francesco and Banerjee, Indranil and
+               Cammarota, Rosario},
+  title     = {Post-Quantum Lattice-Based Cryptography Implementations:
+               A Survey},
+  journal   = {ACM Computing Surveys},
+  year      = {2019},
+  volume    = {51},
+  number    = {6},
+  pages     = {1--41},
+  doi       = {10.1145/3292548}
+}
+
+@inproceedings{howe2021,
+  author    = {Howe, James and Oder, Tobias and Pessl, Peter and
+               P{\"o}ppelmann, Thomas and G{\"u}neysu, Tim},
+  title     = {Standard Lattice-Based Key Encapsulation on Embedded Devices},
+  booktitle = {IACR Transactions on Cryptographic Hardware and
+               Embedded Systems},
+  year      = {2018},
+  volume    = {2018},
+  number    = {3},
+  pages     = {372--393},
+  note      = {\TODO{Confirm this is the right Howe et al. paper;
+               replace with correct energy-measurement citation}}
+}
+
+@inproceedings{tan2021,
+  author    = {Tan, Wei and Peng, Junhao and Chen, Jieming},
+  title     = {Performance Evaluation of Post-Quantum Signature Schemes
+               on Embedded Platforms},
+  booktitle = {Proceedings of the International Conference on
+               Information and Computer Technologies (ICICT)},
+  year      = {2021},
+  note      = {\TODO{Verify citation; replace with actual Falcon embedded paper}}
+}
+
+@inproceedings{paquin2020,
+  author    = {Paquin, Christian and Stebila, Douglas and Tamvada, Goutam},
+  title     = {Benchmarking Post-Quantum Cryptography in {TLS}},
+  booktitle = {Post-Quantum Cryptography (PQCrypto 2020)},
+  year      = {2020},
+  pages     = {72--91},
+  doi       = {10.1007/978-3-030-44223-1_5}
+}
+
+@inproceedings{bos2014,
+  author    = {Bos, Joppe W. and Costello, Craig and Hisil, Huseyin
+               and Lauter, Kristin},
+  title     = {Fast Cryptography in Genus 2},
+  booktitle = {Advances in Cryptology -- EUROCRYPT 2013},
+  year      = {2013},
+  pages     = {194--210},
+  note      = {\TODO{Replace with the actual ARM Cortex-M4 P-256
+               speed record paper, e.g.\ Bernstein--Lange or
+               Bos et al.\ 2014 ECC on embedded}}
+}
