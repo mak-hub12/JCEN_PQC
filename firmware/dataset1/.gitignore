@@ -1,0 +1,18 @@
+# STM32CubeIDE — build output only
+/.settings/
+/.metadata/
+/Debug/
+/Release/
+/build/
+
+# Generated artifacts
+*.elf
+*.bin
+*.hex
+*.map
+*.log
+*.launch
+
+# OS
+.DS_Store
+Thumbs.db

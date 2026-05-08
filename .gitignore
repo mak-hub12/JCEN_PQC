@@ -1,0 +1,48 @@
+# STM32CubeIDE build artifacts
+firmware/*/Debug/
+firmware/*/Release/
+firmware/*/build/
+firmware/**/*.elf
+firmware/**/*.bin
+firmware/**/*.hex
+firmware/**/*.map
+firmware/**/*.launch
+
+# STM32CubeIDE IDE-specific files (not needed to build)
+firmware/*/.settings/
+firmware/*/.metadata/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# LaTeX build artifacts
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.toc
+paper/*.lof
+paper/*.lot
+paper/*.bbl
+paper/*.blg
+paper/*.fls
+paper/*.fdb_latexmk
+paper/*.synctex.gz
+paper/_minted-*/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*.swo
+.vscode/
+.idea/
