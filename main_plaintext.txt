@@ -4,7 +4,7 @@ The standardisation of post-quantum cryptography (PQC) by NIST in 2024 marks the
 
 Unlike P-256 ECDSA, whose execution time is essentially deterministic, the NIST-selected PQC signature algorithms employ fundamentally different probabilistic mechanisms with distinct variance signatures. Module-lattice signatures (ML-DSA) use rejection sampling during signing, whose non-deterministic retry loop produces significant signing-time variance. NTRU-lattice signatures (FN-DSA) apply fast Fourier Gaussian sampling during key generation, creating extreme keygen variance, yet produce deterministic signatures once the key is available. Hash-based signatures (SLH-DSA) traverse fixed Merkle trees with a predetermined computation graph, yielding near-zero variance at the cost of substantially longer execution times. The module-lattice KEM (ML-KEM) involves compact lattice operations that are fast and low-energy.
 
-While prior work benchmarks individual algorithms on ARM Cortex-M4 processors, no study provides: (i) a systematic cross-family variance analysis; (ii) a direct P-256 classical baseline concurrent with PQC measurements; and (iii) coverage of the complete NIST suite — all three signature families and the KEM standard — under identical platform conditions with statistically sufficient run counts. This gap matters for practitioners: a real-time industrial controller that cannot tolerate ML-DSA-44’s worst-case signing time of 445 ms must choose FN-DSA-512 or accept SLH-DSA’s multi-second operation; a LoRaWAN sensor with 51-byte payload constraints cannot use SLH-DSA’s 7,856-byte signatures regardless of latency budget.
+While prior work benchmarks individual algorithms on ARM Cortex-M4 processors , no study provides: (i) a systematic cross-family variance analysis; (ii) a direct P-256 classical baseline concurrent with PQC measurements; and (iii) coverage of the complete NIST suite — all three signature families and the KEM standard — under identical platform conditions with statistically sufficient run counts. This gap matters for practitioners: a real-time industrial controller that cannot tolerate ML-DSA-44’s worst-case signing time of 445 ms must choose FN-DSA-512 or accept SLH-DSA’s multi-second operation; a LoRaWAN sensor with 51-byte payload constraints cannot use SLH-DSA’s 7,856-byte signatures regardless of latency budget.
 
 Contributions.
 
@@ -193,13 +193,13 @@ Deployment Framework
 Table [tab:deploy] maps algorithm properties to common IoT use cases.
 
   Use case                                      ML-DSA-44   FN-DSA-512   SLH-DSA-128s   P-256  Key constraint
-  -------------------------------------------- ----------- ------------ -------------- ------- ----------------------------
+  -------------------------------------------- ----------- ------------ -------------- ------- ------------------------------
   Real-time control (sub-250 ms sign)               ×                         ×                Worst-case latency
   Battery sensor (infrequent sign)                              ∼             ×           ∼    Energy per sign
   Bandwidth-constrained (LoRaWAN)                   ×                         ×                Signature size
   Firmware attestation (infrequent, offline)                                                   One-time keygen acceptable
   Deterministic timing required                     ×         (sign)                           CV  < 1%
-  Smallest SRAM (< 64 KB)                           ×                         ×                FN-DSA-512 stack 45.5 KB
+  Smallest SRAM (< 64 KB)                           ×                                          ML-DSA-44 needs ≈65 KB total
   Post-quantum KEM only                             —           —             —           —    Use ML-KEM-512
 
 Real-time and deterministic timing. FN-DSA-512 is the clear choice when both sub-second signing and deterministic timing are required. Its 755 ms mean sign time is slower than ML-DSA-44’s mean, but its 0.21% CV provides a hard guarantee that no signing operation will significantly exceed this bound. The fast verification (10.5 ms) is a secondary benefit for server-side or gateway verification paths.
@@ -212,7 +212,7 @@ Key exchange. ML-KEM-512 is unequivocally recommended for IoT post-quantum key e
 
 Memory Constraints
 
-Peak stack usage (from FreeRTOS high-water mark measurements): ML-DSA-44 56.9 KB, FN-DSA-512 45.5 KB, SLH-DSA-128s 10.9 KB, ML-KEM-512 12.7 KB, P-256 ECDSA 2.2 KB. All fit within the STM32F446RE’s 128 KB SRAM alongside FreeRTOS (approximately 8 KB) and application state. Devices constrained to 64 KB SRAM (e.g., STM32F103, STM32L073) can accommodate any algorithm in this study using the PQClean reference implementations, as even the largest consumer (ML-DSA-44 at 56.9 KB) leaves room for FreeRTOS and a minimal application. Devices below 32 KB SRAM would require assembly-optimised implementations with reduced stack usage.
+Peak stack usage (from FreeRTOS high-water mark measurements): ML-DSA-44 56.9 KB, FN-DSA-512 45.5 KB, SLH-DSA-128s 10.9 KB, ML-KEM-512 12.7 KB, P-256 ECDSA 2.2 KB. All fit within the STM32F446RE’s 128 KB SRAM alongside FreeRTOS (approximately 8 KB) and application state. Devices constrained to 64 KB SRAM (e.g., STM32F103, STM32L073) can accommodate FN-DSA-512 (45.5 KB), SLH-DSA-128s (10.9 KB), ML-KEM-512 (12.7 KB), and P-256 (2.2 KB) without modification. ML-DSA-44’s 56.9 KB peak stack combined with FreeRTOS overhead (≈65 KB total) exceeds 64 KB and requires a device with at least 96 KB SRAM or a stack-reduced implementation. Devices below 32 KB SRAM require assembly-optimised implementations for any of the NIST PQC schemes.
 
 Limitations and Future Work
 
@@ -250,7 +250,7 @@ The author has no competing interests to declare.
 
 Data availability
 
-All raw measurement data, harmonised datasets, firmware source code, and analysis scripts are publicly available at https://github.com/mak-hub12/JCEN_PQC. Data are released under the MIT License; firmware third-party components (PQClean, FreeRTOS, mbedTLS) retain their respective open-source licences.
+All raw measurement data, harmonised datasets, firmware source code, and analysis scripts are publicly available at the project repository  (https://github.com/mak-hub12/JCEN_PQC). Data are released under the MIT License; firmware third-party components (PQClean, FreeRTOS, mbedTLS) retain their respective open-source licences.
 
 Author contributions
 

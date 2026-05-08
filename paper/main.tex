@@ -61,7 +61,7 @@ artefacts.
 }
 
 \keywords{post-quantum cryptography, embedded systems, ARM Cortex-M4,
-          timing variance, energy measurement, NIST standards, IoT security}
+          timing variance, energy measurement, IoT security}
 
 \maketitle
 
@@ -97,7 +97,7 @@ The module-lattice KEM (ML-KEM) involves compact lattice operations that
 are fast and low-energy.
 
 While prior work benchmarks individual algorithms on ARM Cortex-M4
-processors, no study provides: (i)~a systematic cross-family variance
+processors~\cite{pqm4,nejatollahi2019}, no study provides: (i)~a systematic cross-family variance
 analysis; (ii)~a direct P-256 classical baseline concurrent with PQC
 measurements; and (iii)~coverage of the complete NIST suite --- all
 three signature families and the KEM standard --- under identical
@@ -143,7 +143,7 @@ discarded and new ones sampled, creating a non-deterministic retry loop.
 The ML-DSA-44 parameter set (NIST Security Level 2, $\lambda = 128$) produces
 1312-byte public keys and 2420-byte signatures.
 
-\textbf{FN-DSA (FIPS~206)~\cite{nist-fips206}.}
+\textbf{FN-DSA (FIPS~206)~\cite{nist-fips206,falcon-spec}.}
 Falcon's FN-DSA-512 builds on the NTRU hardness assumption.
 Key generation performs Gram-Schmidt orthogonalisation over the NTRU lattice
 and samples from a discrete Gaussian using the fast Fourier transform; the
@@ -155,7 +155,7 @@ determinism.
 FN-DSA-512 produces the most compact signatures among NIST PQC
 standards: 666 bytes at Security Level 1.
 
-\textbf{SLH-DSA (FIPS~205)~\cite{nist-fips205}.}
+\textbf{SLH-DSA (FIPS~205)~\cite{nist-fips205,sphincsplus-spec}.}
 Stateless Hash-Based Digital Signature Algorithm (formerly SPHINCS$^+$)
 uses FORS one-time signatures, WOTS$^+$ chains, and a hypertree of
 Merkle trees.
@@ -654,8 +654,8 @@ Deterministic timing required
   & $\times$ & \checkmark (sign) & \checkmark & \checkmark
   & CV $< 1$\% \\
 Smallest SRAM (${<}$\,64\,KB)
-  & $\times$ & \checkmark & $\times$ & \checkmark
-  & FN-DSA-512 stack 45.5\,KB \\
+  & $\times$ & \checkmark & \checkmark & \checkmark
+  & ML-DSA-44 needs ${\approx}$65\,KB total \\
 Post-quantum KEM only
   & --- & --- & --- & ---
   & Use ML-KEM-512 \\
@@ -700,11 +700,13 @@ ML-KEM-512 12.7\,KB, P-256 ECDSA 2.2\,KB.
 All fit within the STM32F446RE's 128\,KB SRAM alongside FreeRTOS
 (approximately 8\,KB) and application state.
 Devices constrained to 64\,KB SRAM (e.g., STM32F103, STM32L073)
-can accommodate any algorithm in this study using the PQClean
-reference implementations, as even the largest consumer (ML-DSA-44
-at 56.9\,KB) leaves room for FreeRTOS and a minimal application.
-Devices below 32\,KB SRAM would require assembly-optimised
-implementations with reduced stack usage.
+can accommodate FN-DSA-512 (45.5\,KB), SLH-DSA-128s (10.9\,KB),
+ML-KEM-512 (12.7\,KB), and P-256 (2.2\,KB) without modification.
+ML-DSA-44's 56.9\,KB peak stack combined with FreeRTOS overhead
+(${\approx}$65\,KB total) exceeds 64\,KB and requires a device
+with at least 96\,KB SRAM or a stack-reduced implementation.
+Devices below 32\,KB SRAM require assembly-optimised implementations
+for any of the NIST PQC schemes.
 
 \subsection{Limitations and Future Work}
 
@@ -774,8 +776,8 @@ The author has no competing interests to declare.
 
 \subsection*{Data availability}
 All raw measurement data, harmonised datasets, firmware source code,
-and analysis scripts are publicly available at
-\url{https://github.com/mak-hub12/JCEN_PQC}.
+and analysis scripts are publicly available at the project
+repository~\cite{jcen-repo} (\url{https://github.com/mak-hub12/JCEN_PQC}).
 Data are released under the MIT License; firmware third-party components
 (PQClean, FreeRTOS, mbedTLS) retain their respective open-source licences.
 
@@ -787,6 +789,8 @@ data collection, analysis, writing.
 % Bibliography
 % ================================================================
 
+% NOTE FOR SUBMISSION: switch to \bibliographystyle{sn-mathphys} on Overleaf
+% (TeX Live 2023+). unsrt is used here for local TeX Live 2022 compatibility.
 \bibliographystyle{unsrt}
 \bibliography{references}
 
