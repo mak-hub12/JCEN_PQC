@@ -34,9 +34,10 @@ Post-Quantum Cryptographic Standards on ARM Cortex-M4 Embedded Hardware}
 The transition to post-quantum cryptography (PQC) demands rigorous
 characterisation of the NIST-standardised algorithms on resource-constrained
 embedded platforms before widespread IoT deployment.
-We present a comprehensive benchmark of all four NIST PQC standards ---
-ML-DSA-44 (Dilithium-2), FN-DSA-512 (Falcon-512), SLH-DSA-SHA2-128s
-(SPHINCS\(^+\)-128s), and ML-KEM-512 (Kyber-512) --- alongside a P-256
+We present a comprehensive benchmark of three finalized NIST PQC
+standards (FIPS 203, 204, 205) and one pending draft (FIPS 206) ---
+ML-DSA-44, FN-DSA-512, SLH-DSA-SHA2-128s, and ML-KEM-512 ---
+alongside a P-256
 ECDSA classical baseline, running on a commercial STM32F446RE
 ARM Cortex-M4F development board at 84\,MHz with FreeRTOS.
 Each algorithm is evaluated over 370 independent trials, measuring
@@ -99,8 +100,9 @@ are fast and low-energy.
 While prior work benchmarks individual algorithms on ARM Cortex-M4
 processors~\cite{pqm4,nejatollahi2019}, no study provides: (i)~a systematic cross-family variance
 analysis; (ii)~a direct P-256 classical baseline concurrent with PQC
-measurements; and (iii)~coverage of the complete NIST suite --- all
-three signature families and the KEM standard --- under identical
+measurements; and (iii)~coverage of all three finalized NIST signature
+standards (FIPS 204, 205) plus the draft FIPS~206 (FN-DSA) and the
+finalized KEM standard (FIPS~203) --- under identical
 platform conditions with statistically sufficient run counts.
 This gap matters for practitioners: a real-time industrial controller
 that cannot tolerate ML-DSA-44's worst-case signing time of 445\,ms must
@@ -143,17 +145,20 @@ discarded and new ones sampled, creating a non-deterministic retry loop.
 The ML-DSA-44 parameter set (NIST Security Level 2, $\lambda = 128$) produces
 1312-byte public keys and 2420-byte signatures.
 
-\textbf{FN-DSA (FIPS~206)~\cite{nist-fips206,falcon-spec}.}
-Falcon's FN-DSA-512 builds on the NTRU hardness assumption.
-Key generation performs Gram-Schmidt orthogonalisation over the NTRU lattice
-and samples from a discrete Gaussian using the fast Fourier transform; the
-sampling involves variable-length recursion and retry steps, producing
-highly variable keygen times.
+\textbf{FN-DSA (FIPS~206, Draft)~\cite{nist-fips206,falcon-spec}.}
+FN-DSA --- the FFT over NTRU-Lattice-Based Digital Signature Algorithm
+--- is the algorithm underlying the forthcoming FIPS~206 standard,
+which remained in draft at time of submission.
+FN-DSA-512 builds on the NTRU hardness assumption.
+Key generation performs Gram-Schmidt orthogonalisation over the NTRU
+lattice and samples from a discrete Gaussian using the fast Fourier
+transform; the sampling involves variable-length recursion and retry
+steps, producing highly variable keygen times.
 Once the key tree is precomputed, signing uses tree-indexed Gaussian
 sampling that executes a fixed computation path, achieving near-perfect
 determinism.
-FN-DSA-512 produces the most compact signatures among NIST PQC
-standards: 666 bytes at Security Level 1.
+FN-DSA-512 produces the most compact signatures of the NIST PQC
+finalists: 666 bytes at Security Level 1.
 
 \textbf{SLH-DSA (FIPS~205)~\cite{nist-fips205,sphincsplus-spec}.}
 Stateless Hash-Based Digital Signature Algorithm (formerly SPHINCS$^+$)
@@ -732,8 +737,9 @@ post-quantum security.
 \label{sec:conclusion}
 % ================================================================
 
-We presented the first comprehensive benchmark of the complete NIST PQC
-suite --- ML-DSA-44, FN-DSA-512, SLH-DSA-SHA2-128s, and ML-KEM-512 ---
+We presented the first comprehensive benchmark of the NIST PQC portfolio
+--- ML-DSA-44 (FIPS~204), FN-DSA-512 (FIPS~206, draft),
+SLH-DSA-SHA2-128s (FIPS~205), and ML-KEM-512 (FIPS~203) ---
 alongside a P-256 ECDSA classical baseline, on an ARM Cortex-M4F
 microcontroller at 84\,MHz with 370 independent trials per operation.
 
