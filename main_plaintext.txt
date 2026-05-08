@@ -1,0 +1,257 @@
+Introduction
+
+The standardisation of post-quantum cryptography (PQC) by NIST in 2024 marks the beginning of a mandatory cryptographic transition that reaches from cloud data centres down to the smallest connected devices . For Internet of Things (IoT) microcontrollers — governing industrial sensors, smart-grid nodes, medical implants, and vehicle ECUs — this transition is not merely a software update. These platforms operate under strict constraints of memory (tens to hundreds of kilobytes of SRAM), energy budgets (milliwatt-hours from harvested or battery power), and real-time deadlines (sub-second response), all directly impacted by the runtime properties of PQC schemes.
+
+Unlike P-256 ECDSA, whose execution time is essentially deterministic, the NIST-selected PQC signature algorithms employ fundamentally different probabilistic mechanisms with distinct variance signatures. Module-lattice signatures (ML-DSA) use rejection sampling during signing, whose non-deterministic retry loop produces significant signing-time variance. NTRU-lattice signatures (FN-DSA) apply fast Fourier Gaussian sampling during key generation, creating extreme keygen variance, yet produce deterministic signatures once the key is available. Hash-based signatures (SLH-DSA) traverse fixed Merkle trees with a predetermined computation graph, yielding near-zero variance at the cost of substantially longer execution times. The module-lattice KEM (ML-KEM) involves compact lattice operations that are fast and low-energy.
+
+While prior work benchmarks individual algorithms on ARM Cortex-M4 processors, no study provides: (i) a systematic cross-family variance analysis; (ii) a direct P-256 classical baseline concurrent with PQC measurements; and (iii) coverage of the complete NIST suite — all three signature families and the KEM standard — under identical platform conditions with statistically sufficient run counts. This gap matters for practitioners: a real-time industrial controller that cannot tolerate ML-DSA-44’s worst-case signing time of 445 ms must choose FN-DSA-512 or accept SLH-DSA’s multi-second operation; a LoRaWAN sensor with 51-byte payload constraints cannot use SLH-DSA’s 7,856-byte signatures regardless of latency budget.
+
+Contributions.
+
+1.  A 370-run benchmark of all NIST PQC standards plus P-256 ECDSA on an ARM Cortex-M4F microcontroller under identical conditions.
+
+2.  The first cross-family timing-variance taxonomy on MCU hardware, quantifying CV for rejection sampling (ML-DSA), Gaussian sampling (FN-DSA), and hash-tree traversal (SLH-DSA).
+
+3.  Direct performance comparisons with P-256, showing ML-DSA-44 keygen is 10.7× faster and FN-DSA-512 verify is 77× faster than ECDSA on the same platform.
+
+4.  Per-operation energy characterisation using two complementary PPK2 sampling configurations, with a validated split-window attribution method for Dataset 2.
+
+5.  A deployment decision framework for IoT engineers mapping algorithm variance and energy profiles to application constraints.
+
+6.  Open artefacts at https://github.com/mak-hub12/JCEN_PQC: firmware source, raw and harmonised datasets, analysis pipeline.
+
+Background
+
+NIST Post-Quantum Signature Standards
+
+ML-DSA (FIPS 204) . Module-Lattice Digital Signature Algorithm (formerly Dilithium) bases its security on the hardness of the Module-LWE and Module-SIS problems. Signing generates random masking polynomials and checks their ℓ_(∞) norms against algorithm-specific bounds; vectors that fail the bound are discarded and new ones sampled, creating a non-deterministic retry loop. The ML-DSA-44 parameter set (NIST Security Level 2, λ = 128) produces 1312-byte public keys and 2420-byte signatures.
+
+FN-DSA (FIPS 206) . Falcon’s FN-DSA-512 builds on the NTRU hardness assumption. Key generation performs Gram-Schmidt orthogonalisation over the NTRU lattice and samples from a discrete Gaussian using the fast Fourier transform; the sampling involves variable-length recursion and retry steps, producing highly variable keygen times. Once the key tree is precomputed, signing uses tree-indexed Gaussian sampling that executes a fixed computation path, achieving near-perfect determinism. FN-DSA-512 produces the most compact signatures among NIST PQC standards: 666 bytes at Security Level 1.
+
+SLH-DSA (FIPS 205) . Stateless Hash-Based Digital Signature Algorithm (formerly SPHINCS⁺) uses FORS one-time signatures, WOTS⁺ chains, and a hypertree of Merkle trees. All operations execute a fixed, data-independent computation graph; variance arises only from system jitter and interrupt latency, not from the algorithm itself. We evaluate the SHA2-128s parameter set, which uses SHA-256 as the underlying hash and prioritises small signature size (7856 bytes, Security Level 1) over speed.
+
+NIST KEM Standard
+
+ML-KEM (FIPS 203) . Module-Lattice Key Encapsulation Mechanism (formerly Kyber) provides IND-CCA2-secure key encapsulation based on Module-LWE. ML-KEM-512 (Security Level 1) operates over a rank-2 module lattice. All three operations (keygen, encaps, decaps) are deterministic. ML-KEM-512 produces 800-byte public keys, 768-byte ciphertexts, and a 32-byte shared secret.
+
+Classical Baseline: P-256 ECDSA
+
+NIST P-256 (secp256r1) provides 128-bit classical security via the Elliptic Curve Discrete Logarithm Problem. We benchmark ECDSA key generation, signing, and verification using mbedTLS 3.x in a software-only configuration, producing compact 64-byte public keys and 71-byte DER-encoded signatures. P-256 represents the dominant signature scheme in current IoT TLS deployments and serves as our primary performance reference.
+
+Related Work
+
+ARM Cortex-M4 PQC speed records. The PQM4 library  established baseline cycle counts for lattice and hash-based schemes on Cortex-M4 with hand-optimised assembly, demonstrating that ML-DSA and ML-KEM can be practical on MCU-class hardware. Our work complements PQM4 by using reference C implementations (for portability and reproducibility across toolchains) and adding energy measurement and variance characterisation absent from the PQM4 framework. Chen et al.  and Chen and Chou  optimised BIKE and Classic McEliece on the same Cortex-M4 platform; their extremely high memory requirements reinforce our choice to focus on the standardised finalists.
+
+Energy and power. Prior power profiling of lattice-based schemes on Cortex-M4  reports average current draw but does not provide per-operation energy integrals or systematic variance characterisation. Karl et al.  benchmarked post-quantum signatures including Falcon on a 32-bit RISC-V platform, noting keygen time spread from Gaussian sampling but without quantifying it as a CV or providing a cross-family comparison. Our per-operation energy measurement with the PPK2 and a validated split-window attribution method produces more granular and reproducible energy data than oscilloscope-based approaches.
+
+Timing variance. The non-deterministic rejection-sampling loop in ML-DSA signing is the algorithmic root of its latency variance . Prior embedded measurements of ML-DSA acknowledge wide signing latency ranges but do not systematically compare CV across algorithm families or discuss the implications for real-time scheduling. This paper is the first to present a CV-based variance taxonomy covering all three NIST signature families under the same platform and run count.
+
+PQC vs. classical comparisons. Paquin et al.  measured hybrid TLS 1.3 with PQC on a server and Raspberry Pi; their work focuses on handshake latency rather than per-primitive characterisation. Bos et al.  documented the prevalence of P-256 in deployed TLS and embedded systems, contextualising the choice of ECDSA as our classical baseline and our software-only mbedTLS measurement as a representative real-world deployment cost. To our knowledge this is the first work placing all three NIST PQC signature families and ML-KEM on a single Cortex-M4 platform with concurrent ECDSA measurements and sufficient sample counts for statistically meaningful variance analysis.
+
+Experimental Methodology
+
+Hardware Platform
+
+All experiments use the STM32 NUCLEO-F446RE development board. The STM32F446RE microcontroller features an ARM Cortex-M4F core at 84 MHz, 128 KB SRAM, 512 KB Flash, a single-precision FPU, and a 3.3 V supply rail. FreeRTOS V10 provides task isolation; each algorithm runs in a dedicated task with a 64 KB statically allocated stack. Temperature and relative humidity were monitored via a TMP117 and SHT31-D connected over I²C; all sessions remained within 22–26 ^(∘)C and 40–60% RH.
+
+Algorithm Implementations
+
+Implementations are taken from PQClean : portable, constant-time reference C with no architecture-specific intrinsics. The P-256 baseline uses mbedTLS 3.x (software-only, hardware acceleration disabled). All code is compiled with gcc-arm-none-eabi at -O2 with link-time optimisation disabled. Table 1 summarises the artefact sizes and signature/key lengths.
+
+  Algorithm        pk (B)   sk / ct (B)   sig / ss (B)   Stack (KB)
+  -------------- -------- ------------- -------------- ------------
+  ML-DSA-44          1312          2528           2420         56.9
+  FN-DSA-512          897          1281            666         45.5
+  SLH-DSA-128s         32            64           7856         10.9
+  ML-KEM-512          800          1632            768         12.7
+  P-256 ECDSA          64             —             71          2.2
+
+  : Implementation artefact sizes and cryptographic parameters. Stack column shows peak FreeRTOS task stack usage derived from uxTaskGetStackHighWaterMark measurements across 370 runs.
+
+Timing Measurement
+
+Latency is measured with the ARM DWT cycle counter (DWT_CYCCNT), reset before and sampled after each primitive. At 84 MHz, resolution is 11.9 ns; the 32-bit counter supports up to 51.1 s before rollover, sufficient for all operations including SPHINCS⁺ keygen (≈13.85 s). Cycle counts are converted to microseconds as t[μs] = C/84.
+
+Energy Measurement and Dataset Provenance
+
+A Nordic Semiconductor PPK2 power profiler is inserted in series with the VDD rail. A firmware GPIO pin (PA5) acts as a measurement trigger. Two datasets were collected under different PPK2 configurations.
+
+Dataset 1 (ML-DSA-44 run 1, ML-KEM-512, P-256): PPK2 sampled at 10 kSPS. Due to a firmware policy where the trigger pin remained HIGH across multiple sequential operations, each PPK2 window spans several calls. Per-operation energy is estimated as:
+E_(op) = Ī ⋅ V ⋅ t_(op)
+where Ī is the mean current within the PPK2 window, V = 3.3 V, and t_(op) is the DWT-measured operation duration. This estimate is consistent with the per-operation power column to within ±3% across all Dataset 1 rows.
+
+Dataset 2 (ML-DSA-44 run 2, FN-DSA-512, SLH-DSA-128s): PPK2 sampling was reduced to 1 kSPS because SLH-DSA keygen exceeds 13 s, overflowing the PPK2 internal buffer at 10 kSPS. The firmware was additionally updated to record STM32 operation boundary timestamps over UART; a post-processing split-window algorithm uses these timestamps to slice the PPK2 current trace by operation, computing per-operation energy directly via charge integration:
+E_(op) = V ⋅ ∑_(k ∈ [t_(start), t_(end)])I_(k) ⋅ Δt
+Dataset 2 energy values are therefore per-operation integrals.
+
+Measurement Protocol and Statistics
+
+For each algorithm, n = 370 consecutive trials execute the full operation set (keygen, sign/encaps, verify/decaps) with a fresh random seed each trial. Summary statistics reported throughout are mean μ, standard deviation σ, and coefficient of variation CV = σ/μ × 100%. All n = 370 runs are included; no outliers are removed. With n = 370, the standard error of the mean is $\sigma / \sqrt{370}
+< \sigma / 19$, providing tight confidence intervals even for high-variance operations. Raw and harmonised data, along with the Python analysis pipeline, are available at the repository listed in the Declarations.
+
+Results: Digital Signatures
+
+Latency
+
+Table [tab:latency] presents mean latency and CV for all signature algorithms alongside P-256. Figure 1 visualises the comparison on a log scale.
+
+  Algorithm   Op            Latency (ms)   CV (%)     Energy (mJ)   Power (mW)
+  ----------- -------- ----------------- -------- --------------- ------------
+              keygen          36.8 ± 0.6      1.6     3.46 ± 0.31         95.3
+              sign          121.3 ± 77.6     64.0      11.6 ± 7.4         95.8
+              verify          38.1 ± 0.4      1.0     3.56 ± 0.31         95.6
+              keygen     2922.9 ± 1272.8     43.6   265.8 ± 118.2         90.8
+              sign           754.9 ± 1.6     0.21      68.4 ± 6.3         90.6
+              verify          10.5 ± 0.2      1.8     0.96 ± 0.13         91.5
+              keygen       13851.1 ± 3.9     0.03    1411.6 ± 7.6        101.9
+              sign         2978.1 ± 10.9     0.37     304.1 ± 1.4        102.1
+              verify         103.5 ± 3.8      3.6      10.5 ± 0.4        102.1
+              keygen         394.2 ± 0.7     0.16      43.0 ± 0.1        109.0
+              sign           410.5 ± 2.1     0.52      44.9 ± 0.2        109.4
+              verify         814.7 ± 3.7     0.46      88.9 ± 0.4        109.1
+
+[Mean signature latency with  ± 1σ error bars (log scale, n = 370). Error bars invisible on the log scale for deterministic algorithms; the wide ML-DSA sign bar and FN-DSA keygen bar reflect genuine algorithmic variance, not measurement noise.]
+
+ML-DSA-44 vs. P-256. ML-DSA-44 is substantially faster than P-256 for all operations: keygen 10.7× (36.8 vs. 394 ms), sign 3.4× on average (121 vs. 411 ms), and verify 21.4× (38.1 vs. 815 ms). However, the 64% CV on signing means the worst-case ML-DSA-44 sign (445 ms, observed across 370 runs) exceeds the mean P-256 sign time.
+
+FN-DSA-512 vs. P-256. FN-DSA-512 verification is remarkably fast: 10.5 ms versus P-256’s 814.7 ms, a 77× speedup. Signing is slower (755 ms vs. 411 ms) but fully deterministic. Keygen is the FN-DSA-512 bottleneck: 2.9 s on average with a worst-case exceeding 7 s.
+
+SLH-DSA-128s vs. P-256. SLH-DSA keygen (13.85 s), sign (2.98 s), and verify (104 ms) are all slower than P-256, by 35×, 7×, and 8× respectively. These times preclude real-time use but may be acceptable for offline provisioning and firmware attestation.
+
+Timing Variance
+
+Figure 2 plots CV for each operation. The variance taxonomy across cryptographic families is stark.
+
+Rejection sampling (ML-DSA-44). Signing CV = 64.0% is the highest observed. The latency CDF (Fig. 3) shows a heavy right tail: the P95 latency is 269 ms, P99 is 334 ms, and the maximum observed is 445 ms — a 10.9× spread over the minimum (41 ms). Keygen and verify, which do not involve rejection loops, exhibit low CV of 1.5% and 1.0% respectively.
+
+Gaussian sampling (FN-DSA-512). Keygen CV = 43.6% with observed range 510 ms to 7.2 s (14× spread), reflecting the variable depth of the fast Fourier Gaussian sampling tree. In stark contrast, signing CV = 0.21%, confirming that the precomputed key structure reduces signing to a deterministic traversal.
+
+Hash-tree traversal (SLH-DSA-128s). All operations exhibit CV  < 4%: keygen 0.03%, sign 0.37%, verify 3.6%. The non-zero verify CV reflects OS jitter at the 103 ms measurement scale, not algorithmic non-determinism.
+
+ECDSA (P-256). All operations show CV  ≤ 0.5%, confirming the deterministic nature of scalar multiplication on a fixed-parameter curve under our mbedTLS implementation.
+
+[Coefficient of variation across operations and algorithm families. ML-DSA signing (64%) and FN-DSA keygen (44%) are the dominant variance sources; SLH-DSA and P-256 are near-zero.]
+
+[Cumulative distribution of signing latency. ML-DSA shows a wide, multi-modal distribution from rejection sampling. FN-DSA achieves a near-vertical step (CV = 0.21%). SLH-DSA is similarly tight but at 2–3 orders of magnitude higher latency. P-256 is not shown as its sign CDF is indistinguishable from a step function at 411 ms.]
+
+Energy Consumption
+
+Figure 4 and Table [tab:latency] present per-operation energy. All algorithms consume 90–110 mW during active computation on the 3.3 V rail, reflecting the board’s relatively constant active current draw at 84 MHz. Per-operation energy therefore scales approximately linearly with latency.
+
+ML-DSA-44 keygen (3.5 mJ) consumes only 8% of P-256 keygen energy (43.0 mJ), directly attributable to its 10.7× lower latency. ML-DSA-44 verify (3.6 mJ) similarly consumes only 4% of P-256 verify (88.9 mJ). FN-DSA-512 signing (68.4 mJ) costs 1.5× P-256 signing in energy, while producing 4.3× smaller signatures — a favourable tradeoff for bandwidth-constrained links. SLH-DSA keygen (1412 mJ ≈ 1.4 J) is by far the most energy-intensive operation; SLH-DSA signing (304 mJ) is 6.8× more expensive than P-256 signing.
+
+For a battery-powered sensor with a 1000 mAh cell at 3.3 V (11.88 kJ), the relative costs per operation are: ML-DSA-44 keygen 0.029 ppm, FN-DSA-512 sign 0.57 ppm, SLH-DSA keygen 118 ppm.
+
+[Per-operation energy consumption (log scale, n = 370, mean  ± 1σ). Energy for ML-DSA, FN-DSA, and SLH-DSA from PPK2 charge integration (Dataset 2); P-256 from I ⋅ V ⋅ t estimate (Dataset 1).]
+
+Results: ML-KEM-512
+
+Table 2 presents ML-KEM-512 results. All three operations are fully deterministic (CV  < 2%, approaching measurement noise floor).
+
+  Operation     Latency (ms)   CV (%)   Energy (mJ)   Power (mW)
+  ----------- -------------- -------- ------------- ------------
+  keygen          10.9 ± 0.2     1.94   1.11 ± 0.03        102.4
+  encaps          12.1 ± 0.2     1.73   1.23 ± 0.03        101.8
+  decaps          14.5 ± 0.2     1.54   1.51 ± 0.03        104.4
+
+  : ML-KEM-512 performance (n = 370, energy estimated via Eq. [eq:energy-est])
+
+ML-KEM-512 is exceptionally suited to constrained IoT key exchange. All operations complete within 15 ms and consume under 1.6 mJ, orders of magnitude below any of the signature schemes. For comparison, ML-KEM-512 keygen (10.9 ms, 1.11 mJ) is 36× faster and 39× more energy-efficient than P-256 ECDSA keygen. The small CV values (1.5–1.9%) are consistent with module-lattice operations that execute a fixed set of polynomial multiplications and additions with no rejection or retry loops. The slight increase in decaps latency versus encaps reflects the additional implicit rejection step required for CCA security.
+
+Cross-Run Reproducibility
+
+ML-DSA-44 was measured in two independent experimental campaigns (Dataset 1 at 10 kSPS and Dataset 2 at 1 kSPS) to validate reproducibility. Figure 5 overlays the latency distributions for both runs.
+
+[ML-DSA-44 latency distribution from two independent measurement runs. Histograms are normalised to density for direct comparison. Run 1 (n = 370) and Run 2 (n = 370) show near-identical distributions for all three operations, confirming reproducibility.]
+
+The two runs produce statistically indistinguishable latency distributions:
+
+-   keygen: 36.8 ± 0.6 ms (run 1) vs. 36.8 ± 0.6 ms (run 2); CV 1.52% vs. 1.59%
+
+-   sign: 121.3 ± 77.7 ms (run 1) vs. 121.3 ± 77.6 ms (run 2); CV 64.01% in both cases
+
+-   verify: 38.1 ± 0.4 ms (run 1) vs. 38.1 ± 0.4 ms (run 2); CV 1.11% vs. 1.00%
+
+The agreement to three significant figures validates that the DWT cycle measurements are stable across different firmware builds and PPK2 configurations. The small differences in energy between runs (keygen: 3.75 vs. 3.46 mJ) are attributable to the different energy attribution methods (Eq. [eq:energy-est] vs. Eq. [eq:energy-int]) and the different PPK2 sampling rates, not to actual power consumption differences.
+
+Discussion
+
+Variance as a First-Class Deployment Criterion
+
+Our results establish variance — not just mean latency or mean energy — as a primary axis for PQC algorithm selection in IoT contexts. The conventional approach of reporting mean performance is misleading for ML-DSA: its mean signing time (121 ms) appears acceptable, but its worst-case (445 ms) violates the 250 ms deadline common in industrial Modbus RT and IEC 61850 applications. Conversely, FN-DSA-512’s keygen mean (2.9 s) appears prohibitive, but keygen typically occurs once at device provisioning, not on the critical path.
+
+We propose the following variance tolerance taxonomy:
+
+-   Hard real-time (CV budget  < 1%): use FN-DSA-512 (sign), SLH-DSA (keygen, sign), or P-256.
+
+-   Soft real-time (deadline slack  > 5× mean): ML-DSA-44 acceptable if 445 ms worst-case fits the deadline budget.
+
+-   Non-real-time (best-effort): all schemes viable; optimise for energy or signature size.
+
+Deployment Framework
+
+Table [tab:deploy] maps algorithm properties to common IoT use cases.
+
+  Use case                                      ML-DSA-44   FN-DSA-512   SLH-DSA-128s   P-256  Key constraint
+  -------------------------------------------- ----------- ------------ -------------- ------- ----------------------------
+  Real-time control (sub-250 ms sign)               ×                         ×                Worst-case latency
+  Battery sensor (infrequent sign)                              ∼             ×           ∼    Energy per sign
+  Bandwidth-constrained (LoRaWAN)                   ×                         ×                Signature size
+  Firmware attestation (infrequent, offline)                                                   One-time keygen acceptable
+  Deterministic timing required                     ×         (sign)                           CV  < 1%
+  Smallest SRAM (< 64 KB)                           ×                         ×                FN-DSA-512 stack 45.5 KB
+  Post-quantum KEM only                             —           —             —           —    Use ML-KEM-512
+
+Real-time and deterministic timing. FN-DSA-512 is the clear choice when both sub-second signing and deterministic timing are required. Its 755 ms mean sign time is slower than ML-DSA-44’s mean, but its 0.21% CV provides a hard guarantee that no signing operation will significantly exceed this bound. The fast verification (10.5 ms) is a secondary benefit for server-side or gateway verification paths.
+
+Battery-powered sensors. ML-DSA-44 offers the best energy-per-signature when signing is frequent: 11.6 mJ average vs. FN-DSA-512’s 68 mJ and SLH-DSA’s 304 mJ. Its 64% signing CV is acceptable for sensors that report data on a periodic schedule without hard deadlines. Note however that rare worst-case sign operations (445 ms, 47 mJ) must be budgeted in the power model.
+
+Bandwidth-constrained networks. FN-DSA-512’s 666-byte signature fits a LoRaWAN maximum payload of approximately 222 bytes per burst using fragmented transport, whereas ML-DSA-44 (2420 bytes) and SLH-DSA (7856 bytes) require substantially more fragments or a different link layer.
+
+Key exchange. ML-KEM-512 is unequivocally recommended for IoT post-quantum key exchange. Its sub-15 ms, sub-2 mJ operations are negligible compared to any of the signature schemes and represent a minimal overhead even on the most constrained platforms targeting 128-bit security.
+
+Memory Constraints
+
+Peak stack usage (from FreeRTOS high-water mark measurements): ML-DSA-44 56.9 KB, FN-DSA-512 45.5 KB, SLH-DSA-128s 10.9 KB, ML-KEM-512 12.7 KB, P-256 ECDSA 2.2 KB. All fit within the STM32F446RE’s 128 KB SRAM alongside FreeRTOS (approximately 8 KB) and application state. Devices constrained to 64 KB SRAM (e.g., STM32F103, STM32L073) can accommodate any algorithm in this study using the PQClean reference implementations, as even the largest consumer (ML-DSA-44 at 56.9 KB) leaves room for FreeRTOS and a minimal application. Devices below 32 KB SRAM would require assembly-optimised implementations with reduced stack usage.
+
+Limitations and Future Work
+
+Our benchmark uses PQClean reference implementations compiled with -O2 without architecture-specific optimisation. Platform-optimised implementations (e.g., using Cortex-M4 SIMD instructions for NTT) can reduce ML-DSA and ML-KEM latency by 2–4× , and would shift the latency comparisons in favour of PQC. The variance characterisation, however, is independent of implementation efficiency: rejection-sampling variance is an inherent algorithmic property of ML-DSA regardless of NTT speed.
+
+A direct comparison for key exchange requires an ECDH P-256 baseline alongside ML-KEM-512, which was not included in Dataset 1; a follow-on measurement campaign adding ECDH P-256 would complete this comparison. Additionally, evaluating higher security levels (ML-DSA-65, FN-DSA-1024, SLH-DSA-256s) would characterise the performance-security scaling, which is particularly relevant for applications requiring 192-bit or 256-bit post-quantum security.
+
+Conclusion
+
+We presented the first comprehensive benchmark of the complete NIST PQC suite — ML-DSA-44, FN-DSA-512, SLH-DSA-SHA2-128s, and ML-KEM-512 — alongside a P-256 ECDSA classical baseline, on an ARM Cortex-M4F microcontroller at 84 MHz with 370 independent trials per operation.
+
+Our key findings are:
+
+1.  PQC lattice schemes are faster than P-256 for key generation and verification: ML-DSA-44 keygen is 10.7× faster, and FN-DSA-512 verify is 77× faster than ECDSA.
+
+2.  Variance is the critical differentiator: ML-DSA-44 signing (CV = 64%) and FN-DSA-512 keygen (CV = 44%) can exceed worst-case deadlines by factors of 3–10× over the mean, while FN-DSA-512 signing (CV = 0.21%) and SLH-DSA (CV  < 0.4%) are effectively deterministic.
+
+3.  ML-KEM-512 is highly practical: all operations complete within 15 ms and 1.6 mJ — negligible overhead for IoT key exchange.
+
+4.  Timing reproducibility is confirmed: independent ML-DSA-44 runs agree to three significant figures in both mean latency and CV.
+
+5.  No single algorithm dominates: FN-DSA-512 excels for real-time and bandwidth-constrained use; ML-DSA-44 for energy-efficient frequent signing; SLH-DSA for ultra-predictable offline attestation.
+
+IoT engineers transitioning to post-quantum cryptography must treat timing variance as a first-class criterion alongside the traditional metrics of speed, code size, and energy. The deployment framework in Table [tab:deploy] provides actionable guidance for matching algorithm selection to application constraints. All artefacts are released openly to support reproducibility and facilitate further MCU-class PQC research.
+
+Declarations
+
+Funding
+
+The author received no external funding for this research.
+
+Competing interests
+
+The author has no competing interests to declare.
+
+Data availability
+
+All raw measurement data, harmonised datasets, firmware source code, and analysis scripts are publicly available at https://github.com/mak-hub12/JCEN_PQC. Data are released under the MIT License; firmware third-party components (PQClean, FreeRTOS, mbedTLS) retain their respective open-source licences.
+
+Author contributions
+
+A. McGuire: conceptualisation, hardware setup, firmware development, data collection, analysis, writing.

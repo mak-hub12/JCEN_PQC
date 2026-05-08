@@ -207,7 +207,7 @@ on the standardised finalists.
 Prior power profiling of lattice-based schemes on Cortex-M4~\cite{pqm4}
 reports average current draw but does not provide per-operation energy
 integrals or systematic variance characterisation.
-Karl et al.~\cite{karl2022} benchmarked post-quantum signatures including
+Karl et al.~\cite{karl2024} benchmarked post-quantum signatures including
 Falcon on a 32-bit RISC-V platform, noting keygen time spread from
 Gaussian sampling but without quantifying it as a CV or providing a
 cross-family comparison.
@@ -655,7 +655,7 @@ Deterministic timing required
   & CV $< 1$\% \\
 Smallest SRAM (${<}$\,64\,KB)
   & $\times$ & \checkmark & $\times$ & \checkmark
-  & FN-DSA-512 stack 30\,KB \\
+  & FN-DSA-512 stack 45.5\,KB \\
 Post-quantum KEM only
   & --- & --- & --- & ---
   & Use ML-KEM-512 \\
@@ -694,14 +694,17 @@ most constrained platforms targeting 128-bit security.
 
 \subsection{Memory Constraints}
 
-Peak stack usage: ML-DSA-44 56.9\,KB, FN-DSA-512 30.2\,KB,
-SLH-DSA-128s 61.1\,KB, ML-KEM-512 52.2\,KB.
+Peak stack usage (from FreeRTOS high-water mark measurements):
+ML-DSA-44 56.9\,KB, FN-DSA-512 45.5\,KB, SLH-DSA-128s 10.9\,KB,
+ML-KEM-512 12.7\,KB, P-256 ECDSA 2.2\,KB.
 All fit within the STM32F446RE's 128\,KB SRAM alongside FreeRTOS
-(approximately 8\,KB) and application state, leaving 2--40\,KB for
-application data depending on the algorithm.
-Devices constrained to 64\,KB SRAM (e.g., STM32F103, STM32L073) can
-only accommodate FN-DSA-512 or ML-KEM-512 from the NIST PQC suite
-using the PQClean reference implementations.
+(approximately 8\,KB) and application state.
+Devices constrained to 64\,KB SRAM (e.g., STM32F103, STM32L073)
+can accommodate any algorithm in this study using the PQClean
+reference implementations, as even the largest consumer (ML-DSA-44
+at 56.9\,KB) leaves room for FreeRTOS and a minimal application.
+Devices below 32\,KB SRAM would require assembly-optimised
+implementations with reduced stack usage.
 
 \subsection{Limitations and Future Work}
 
